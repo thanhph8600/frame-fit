@@ -30,6 +30,21 @@ export interface FaceMeasurementsMm {
   mouthWidth: number;
 }
 
+export interface FaceFitAnchor {
+  /** % across the source image's width where the eye-line midpoint sits. */
+  centerXPct: number;
+  /** % down the source image's height where the eye-line midpoint sits. */
+  centerYPct: number;
+  /** Roll angle (degrees) of the eye line vs. horizontal, for rotating an overlay to match head tilt. */
+  rotationDeg: number;
+  /**
+   * What % of the image's width one real-world mm occupies at this photo's
+   * scale. Lets the UI turn a catalog item's `frameWidthMm` directly into an
+   * overlay width (as a % of the displayed image) without redoing pixel math.
+   */
+  pctPerMm: number;
+}
+
 export interface FaceAnalysis {
   faceShape: FaceShape;
   /**
@@ -47,6 +62,8 @@ export interface FaceAnalysis {
   noseBridgeWidth: NoseBridgeWidth;
   /** Suggested total frame width range, derived from measured face width. */
   recommendedFrameWidthMm: [number, number] | null;
+  /** Anchor for rendering a glasses overlay on the source photo. */
+  fit: FaceFitAnchor;
 }
 
 export interface GlassesItem {

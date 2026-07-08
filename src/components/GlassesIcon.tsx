@@ -1,4 +1,5 @@
 import type { FrameStyle } from '../types';
+import { FRAME_GAP, FRAME_LENS_WIDTH } from '../lib/frameGeometry';
 
 interface GlassesIconProps {
   style: FrameStyle;
@@ -18,14 +19,14 @@ interface LensShape {
 }
 
 const SHAPES: Record<FrameStyle, LensShape> = {
-  round: { width: 60, height: 60, rx: 30 },
-  square: { width: 56, height: 50, rx: 5 },
-  rectangle: { width: 66, height: 38, rx: 6 },
-  'cat-eye': { width: 58, height: 46, rx: 10, catEye: true },
-  aviator: { width: 58, height: 56, rx: 14, aviator: true },
-  browline: { width: 56, height: 48, rx: 5, browBar: true },
-  rimless: { width: 58, height: 50, rx: 8, fillOnly: false },
-  oversized: { width: 74, height: 64, rx: 20 },
+  round: { width: FRAME_LENS_WIDTH.round, height: 60, rx: 30 },
+  square: { width: FRAME_LENS_WIDTH.square, height: 50, rx: 5 },
+  rectangle: { width: FRAME_LENS_WIDTH.rectangle, height: 38, rx: 6 },
+  'cat-eye': { width: FRAME_LENS_WIDTH['cat-eye'], height: 46, rx: 10, catEye: true },
+  aviator: { width: FRAME_LENS_WIDTH.aviator, height: 56, rx: 14, aviator: true },
+  browline: { width: FRAME_LENS_WIDTH.browline, height: 48, rx: 5, browBar: true },
+  rimless: { width: FRAME_LENS_WIDTH.rimless, height: 50, rx: 8, fillOnly: false },
+  oversized: { width: FRAME_LENS_WIDTH.oversized, height: 64, rx: 20 },
 };
 
 function Lens({ shape, color, mirror }: { shape: LensShape; color: string; mirror?: boolean }) {
@@ -86,7 +87,7 @@ function Lens({ shape, color, mirror }: { shape: LensShape; color: string; mirro
 
 export function GlassesIcon({ style, color, accentColor, className }: GlassesIconProps) {
   const shape = SHAPES[style];
-  const gap = 18;
+  const gap = FRAME_GAP;
   const cx = shape.width / 2 + gap / 2;
 
   return (

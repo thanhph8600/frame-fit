@@ -35,6 +35,8 @@ const LM = {
   foreheadR2: 284,
   eyeOuterL: 33,
   eyeOuterR: 263,
+  eyeInnerL: 133,
+  eyeInnerR: 362,
   irisCenterL: 468,
   irisRingL: [469, 470, 471, 472],
   irisCenterR: 473,
@@ -49,6 +51,12 @@ const LM = {
 // in face-photogrammetry tools since it varies little between adults (unlike
 // interpupillary distance, which is itself one of the things we're measuring).
 const IRIS_DIAMETER_MM = 11.7;
+
+// Fallback bizygomatic-width assumption used only to scale/place the glasses
+// overlay when iris landmarks aren't available for precise mm calibration
+// (measurementsMm stays null in that case — this is a rougher approximation
+// good enough for visual placement, not for the reported measurements).
+const AVERAGE_FACE_WIDTH_MM = 140;
 
 // A measured shape is only reported as "borderline" (with an alternate
 // suggestion) when the runner-up's score comes within this fraction of the
@@ -202,11 +210,16 @@ export function analyzeFace(
 
   let measurementsMm: FaceAnalysis['measurementsMm'] = null;
   let recommendedFrameWidthMm: FaceAnalysis['recommendedFrameWidthMm'] = null;
+  // px-per-mm at this photo's scale, used to size the glasses overlay from a
+  // catalog item's frameWidthMm; refined below when iris landmarks let us
+  // calibrate precisely instead of relying on the average-width fallback.
+  let pxPerMm = cheekWidthPx / AVERAGE_FACE_WIDTH_MM;
 
   if (hasIris) {
     const irisPxL = irisDiameterPx(px, LM.irisCenterL, LM.irisRingL);
     const irisPxR = irisDiameterPx(px, LM.irisCenterR, LM.irisRingR);
-    const mmPerPx = IRIS_DIAMETER_MM / ((irisPxL + irisPxR) / 2);
+    pxPerMm = (irisPxL + irisPxR) / 2 / IRIS_DIAMETER_MM;
+    const mmPerPx = 1 / pxPerMm;
 
     const faceWidthMm = cheekWidthPx * mmPerPx;
     measurementsMm = {
@@ -221,6 +234,37 @@ export function analyzeFace(
     recommendedFrameWidthMm = [faceWidthMm - 4, faceWidthMm + 4];
   }
 
+  // Eye-line anchor for the glasses overlay: prefer iris centers (most
+  // precise), falling back to eye-corner midpoints when iris landmarks
+  // aren't available. Points are ordered by on-image x (not anatomical
+  // L/R) so the rotation reflects actual visual head tilt regardless of
+  // which side MediaPipe's own L/R naming corresponds to on screen.
+  const eyeCenterA = hasIris
+    ? p(LM.irisCenterL)
+    : {
+        x: (p(LM.eyeOuterL).x + p(LM.eyeInnerL).x) / 2,
+        y: (p(LM.eyeOuterL).y + p(LM.eyeInnerL).y) / 2,
+        z: 0,
+      };
+  const eyeCenterB = hasIris
+    ? p(LM.irisCenterR)
+    : {
+        x: (p(LM.eyeOuterR).x + p(LM.eyeInnerR).x) / 2,
+        y: (p(LM.eyeOuterR).y + p(LM.eyeInnerR).y) / 2,
+        z: 0,
+      };
+  const [imgLeftEye, imgRightEye] =
+    eyeCenterA.x <= eyeCenterB.x ? [eyeCenterA, eyeCenterB] : [eyeCenterB, eyeCenterA];
+  const rotationDeg =
+    (Math.atan2(imgRightEye.y - imgLeftEye.y, imgRightEye.x - imgLeftEye.x) * 180) / Math.PI;
+
+  const fit: FaceAnalysis['fit'] = {
+    centerXPct: ((imgLeftEye.x + imgRightEye.x) / 2 / imageWidth) * 100,
+    centerYPct: ((imgLeftEye.y + imgRightEye.y) / 2 / imageHeight) * 100,
+    rotationDeg,
+    pctPerMm: (pxPerMm / imageWidth) * 100,
+  };
+
   return {
     faceShape,
     alternateFaceShape,
@@ -228,5 +272,6 @@ export function analyzeFace(
     eyeSpacing,
     noseBridgeWidth,
     recommendedFrameWidthMm,
+    fit,
   };
 }
