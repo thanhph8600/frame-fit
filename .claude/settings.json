@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(pkill -f \"npm run dev\")"
+    ]
+  }
+}
